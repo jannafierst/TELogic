@@ -1,0 +1,1 @@
+These are matlab implementations of the deterministic equations in Eggers and Fierst XXXX. The run.m file allows parameter manipulations and the compete.m and parasite.m files iterate the equations and plot trajectories for autonomous and non autonomous TEs.
