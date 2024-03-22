@@ -1,22 +1,16 @@
 #!/bin/bash
 
-#SBATCH --account iacc_jfierst
-#SBATCH --qos highmem1
-#SBATCH --partition highmem1
+#SBATCH --account user_account
+#SBATCH --qos quality_of_service
+#SBATCH --partition node_to_run_on
 #SBATCH --output=out_%slim.log
-#SBATCH --mail-user=jfierst@fiu.edu
+#SBATCH --mail-user=user@uni.edu
 #SBATCH --mail-type=ALL
 
-#example
-#export VARIABLE_PATH=/home/data/jfierst/FULL/PATH/HERE 
+# example script for simulating populations on a SLURM system
 
-module load miniconda3-4.5.11-gcc-8.2.0-oqs2mbg
+module load miniconda3-4.5.11-gcc-8.2.0-oqs2mbg # miniconda module
 
-source activate /home/jfierst/.conda/envs/slim
+source activate slim # slim module
 
-bash nonWF_2Sexes_Arnaud.sh
-#bash nonWF_Selfing_Arnaud.sh
-#bash nonWF_Charlesworth.sh
-#bash nonWF_Selfing_Charlesworth.sh
-#bash nonWF_2Sexes_Parasites.sh
-#bash nonWF_Selfing_Parasites.sh
+bash run_slim.sh # compute
