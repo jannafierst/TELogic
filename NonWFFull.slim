@@ -1,0 +1,214 @@
+// Janna Fierst, jfierst@fiu.edu
+// SLiM 4.0.1 implementation of deterministic equations developed in Eggers and Fierst XXXX
+
+// The model encompasses Competitive vs Parasitic regulation of TEs, reproductive modes of selfing/outcrossing and permits manipulation of population genetic parameters including recombination rate and population size. TE-specific parameters including insertion and excision rates and selective effects can also be altered. Outputs are written to a .csv file every X generations.
+
+initialize() 
+	{
+	defineCfgParam("RUN",0); // replicate runs
+	defineCfgParam("K",1000); // population size
+	defineCfgParam("TE_INITIAL",4); // TE initial population
+	defineCfgParam("RECOMB",1e-2); // Recombination rate
+	defineCfgParam("OUTCROSSING",1); // Outcrossing rate (Selfing rate is 1 - Outcrossing)
+	defineCfgParam("MODEL",0); // Model of TE regulation, 0 = Compete and 1 = Parasite
+	
+	//SNPs
+	////Initialization
+	initializeSLiMModelType("nonWF");
+	initializeMutationRate(0); // mutation rate
+	initializeMutationType("m1", 0.5, "f", 0.0); // m1 mutation type: neutral
+	
+	//Chromosome
+	////Constants
+	defineConstant("L", 10000); // chromosome length
+	////Initialization
+	initializeGenomicElementType("g1", m1, 1.0); // g1 genomic element type: uses m1 for all mutations
+	initializeGenomicElement(g1, 0, L-1); // uniform chromosome
+	initializeRecombinationRate(RECOMB);  //totally free
+	
+	//TEs
+	////Constants
+	defineConstant("u", 0.01); // u=insertion rate
+	defineConstant("v", 0.001); // v=excision rate
+	defineConstant("s", 0.001);//s=selective effect
+	defineConstant("a1",1);//autonomous activity rate
+	defineConstant("a2",0);//non autonomous activity rate
+	
+	////Initialization
+	// autonomous transposon mutation
+	initializeMutationType("m2", 0.5, "f", 0.00);
+	m2.convertToSubstitution = F;
+	m2.color = "#FF0000";
+	
+	// non autonomous transposon mutation
+	initializeMutationType("m3", 0.5, "f", 0.00);
+	m3.convertToSubstitution = F;
+	m3.color = "#700000";
+}
+
+reproduction()
+	{
+	//changed line below to out-crossing, since that seems to be what you're after
+	outcrossing_P = OUTCROSSING;
+	inds = p1.individuals;
+	// only hermaphrodites can bear offspring, so loop over them
+	for (i in seqLen(K))
+		{
+		if (runif(1) < outcrossing_P)
+			{
+			parent1 = rdunif(1,0, size(inds)-1);
+			parent2 = rdunif(1,0, size(inds)-1);  // hermaphrodites can cross with other hermaphrodites or a male
+			crossedOffspring = p1.addCrossed(inds[parent1], inds[parent2]);
+			}
+		else
+			{
+			parent = rdunif(1,0, size(inds)-1);
+			selfedOffspring  = p1.addSelfed(inds[parent]);
+			}
+		}
+	self.active = 0;
+	}	
+	
+1 early()
+	{
+	// Create a population with K capacity
+	sim.addSubpop("p1", K);
+	
+	// Generating TEs
+	//// create some TEs at random positions
+	genomes = sim.subpopulations.genomes;
+	positions = rdunif(TE_INITIAL, 0, L-1);
+	for (teIndex in 0:(TE_INITIAL-1))
+		{
+		pos = positions[teIndex];
+		if (teIndex < (TE_INITIAL/2))
+			{
+			mut = genomes.addNewDrawnMutation(m2, pos); //autonomous transposons
+			}
+		else
+			{
+			mut = genomes.addNewDrawnMutation(m3, pos); //non autonomous transposons
+			}
+		}
+	}
+	
+early() 
+	{
+	p1.fitnessScaling = K / p1.individualCount;
+	}
+
+1:500000 late()
+	{
+	asum=0;
+	// TE activity
+	for (individual in sim.subpopulations.individuals) //first, calculate abar
+		{
+		for (genome in individual.genomes)
+			{
+			tes1 = genome.mutationsOfType(m2); //autonomous mutations
+			tes2 = genome.mutationsOfType(m3); //non autonomous mutations
+			teCount = tes1.size() + tes2.size(); //number of autonomous and non autonomous
+			if (teCount > 0)
+				{
+				a = (tes1.size()*a1 + tes2.size()*a2)/teCount;
+				}
+			else
+				{
+				a = 0;
+				}
+			}
+		asum = asum + a;
+		}
+	abar = asum/K;
+	for (individual in sim.subpopulations.individuals)
+		{
+		for (genome in individual.genomes)
+			{
+			tes1 = genome.mutationsOfType(m2); //autonomous mutations
+			tes2 = genome.mutationsOfType(m3); //non autonomous mutations
+			if (MODEL==0)
+				{
+				insCount1 = tes1.size() ? rpois(1, abar * u) else 0; //N Inserting autonomous TEs
+				}
+			else if (MODEL==1)
+				{
+				insCount1 = tes1.size() ? rpois(1, (1 - abar)^2 * u) else 0; //N Inserting autonomous TEs			
+				}				
+			excCount1 = tes1.size() ? rpois(1, v) else 0; //N Excising autonomous TEs
+			
+			insCount2 = tes2.size() ? rpois(1, abar * u) else 0; //N Inserting non autonomous TEs
+			excCount2 = tes2.size() ? rpois(1, v) else 0; //N Excising non autonomous TEs
+			if (insCount1)
+				{
+				if (size(tes1) >= insCount1) // added to handle 0s?
+					{ 				
+					insTEs = sample(tes1, insCount1);
+					for (te in insTEs)
+						{
+						// make a new TE mutation
+						pos = rdunif(1, 0, L-1);
+						insTE = genome.addNewDrawnMutation(m2, pos);
+						}
+					}
+				}
+			//Excision
+			if (excCount1)
+				{
+				if (size(tes1) >= excCount1)
+					{
+					excTEs = sample(tes1, excCount1);
+					for (te in excTEs)
+						{
+						// Remove a TE mutation
+						genome.removeMutations(te);
+						}
+					}
+				}	
+			if (insCount2)
+				{
+				if (size(tes2) >= insCount2)
+					{
+					insTEs = sample(tes2, insCount2);
+					for (te in insTEs)
+						{
+						// make a new TE mutation
+						pos = rdunif(1, 0, L-1);
+						insTE = genome.addNewDrawnMutation(m3, pos);
+						}
+					}
+				}
+			//Excision
+			if (excCount2)
+				{
+				if (size(tes2) >= excCount2)
+					{					
+					excTEs = sample(tes2, excCount2);
+					for (te in excTEs)
+						{
+						// Remove a TE mutation
+						genome.removeMutations(te);
+						}
+					}
+				}
+			}
+		}
+	inds = p1.individuals;
+	n1 = inds.countOfMutationsOfType(m2);
+	n2 = inds.countOfMutationsOfType(m3);
+	n = (inds.countOfMutationsOfType(m2) + inds.countOfMutationsOfType(m3));
+	inds.fitnessScaling = 1 - s*n;
+	// Output
+	if (sim.cycle % 1000 == 0) // Specify the sampling for output files, here every 10 generations
+		{
+		line = paste(RUN, sim.cycle, mean(n1), mean(n2), size(inds), sep=",");
+		print(line);
+		writeFile(paste("Full",MODEL,"_",K,"_",TE_INITIAL,"_",OUTCROSSING,"_",RECOMB,".csv",sep=""), line, append=T);
+		}
+	}
+
+//// Function to specify command line constants
+function (void) defineCfgParam(string$ name, lifs value) 
+	{
+	if (!exists(name))
+		defineConstant(name, value);
+	}
