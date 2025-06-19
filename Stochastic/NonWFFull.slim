@@ -1,7 +1,7 @@
 // Janna Fierst, jfierst@fiu.edu
 // SLiM 4.0.1 implementation of deterministic equations developed in Eggers and Fierst XXXX
 
-// The model encompasses Competitive vs Parasitic regulation of TEs, reproductive modes of selfing/outcrossing and permits manipulation of population genetic parameters including recombination rate and population size. TE-specific parameters including insertion and excision rates and selective effects can also be altered. Outputs are written to a .csv file every X generations.
+// The model encompasses Symmetric or Intrinsic regulation of TEs, reproductive modes of selfing/outcrossing and permits manipulation of population genetic parameters including recombination rate and population size. TE-specific parameters including insertion and excision rates and selective effects can also be altered. Outputs are written to a .csv file every X generations.
 
 initialize() 
 	{
@@ -10,7 +10,7 @@ initialize()
 	defineCfgParam("TE_INITIAL",4); // TE initial population
 	defineCfgParam("RECOMB",1e-2); // Recombination rate
 	defineCfgParam("OUTCROSSING",1); // Outcrossing rate (Selfing rate is 1 - Outcrossing)
-	defineCfgParam("MODEL",0); // Model of TE regulation, 0 = Compete and 1 = Parasite
+	defineCfgParam("MODEL",0); // Model of TE regulation, 0 = Symmetric and 1 = Intrinsic
 	
 	//SNPs
 	////Initialization
@@ -30,7 +30,7 @@ initialize()
 	////Constants
 	defineConstant("u", 0.01); // u=insertion rate
 	defineConstant("v", 0.001); // v=excision rate
-	defineConstant("s", 0.001);//s=selective effect
+	defineConstant("s", -0.001);//s=selective effect
 	defineConstant("a1",1);//autonomous activity rate
 	defineConstant("a2",0);//non autonomous activity rate
 	
@@ -48,7 +48,7 @@ initialize()
 
 reproduction()
 	{
-	//changed line below to out-crossing, since that seems to be what you're after
+	//
 	outcrossing_P = OUTCROSSING;
 	inds = p1.individuals;
 	// only hermaphrodites can bear offspring, so loop over them
@@ -56,13 +56,13 @@ reproduction()
 		{
 		if (runif(1) < outcrossing_P)
 			{
-			parent1 = rdunif(1,0, size(inds)-1);
-			parent2 = rdunif(1,0, size(inds)-1);  // hermaphrodites can cross with other hermaphrodites or a male
+			parent1 = rdunif(1,0, size(inds)-1);  // all individuals can potentially outcross
+			parent2 = rdunif(1,0, size(inds)-1);  //
 			crossedOffspring = p1.addCrossed(inds[parent1], inds[parent2]);
 			}
 		else
 			{
-			parent = rdunif(1,0, size(inds)-1);
+			parent = rdunif(1,0, size(inds)-1); // all individuals can potentially self
 			selfedOffspring  = p1.addSelfed(inds[parent]);
 			}
 		}
@@ -196,7 +196,7 @@ early()
 	n1 = inds.countOfMutationsOfType(m2);
 	n2 = inds.countOfMutationsOfType(m3);
 	n = (inds.countOfMutationsOfType(m2) + inds.countOfMutationsOfType(m3));
-	inds.fitnessScaling = 1 - s*n;
+	inds.fitnessScaling = 1 + s*n;
 	// Output
 	if (sim.cycle % 1000 == 0) // Specify the sampling for output files, here every 10 generations
 		{
