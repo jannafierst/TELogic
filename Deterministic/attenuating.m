@@ -1,4 +1,4 @@
-function [u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0] = intrinsic(u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0)
+function [u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0] = attenuating(u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0)
 %ASSUME: 
 %     -
 %     -
