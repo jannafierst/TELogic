@@ -5,7 +5,7 @@ POP=1000 # Population size
 TE=4 # Number of initial TEs
 RECOMB=1e-2 # Recombination rate
 OUTCROSS=1.0 # Outcrossing rate
-MODEL=0 # Model of TE regulation, 0=Symmetric and 1=Intrinsic
+MODEL=0 # Model of TE regulation, 0=Symmetric and 1=Asymmetric
 
 for (( i=0; i<$ITERATE; i++ ))
 do
