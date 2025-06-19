@@ -1,4 +1,4 @@
-function [u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0] = parasite(u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0)
+function [u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0] = intrinsic(u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0)
 %ASSUME: 
 %     -
 %     -
@@ -21,7 +21,7 @@ n2 = N2_0;
 A = [n1 n2];
 N1 = n1;
 N2 = n2;
-fileID = fopen('parasite.txt','w');
+fileID = fopen('Intrinsic.txt','w');
 for i=1:1:n % here, N is number of generations
     Sn = s/((N1+N2)*s + 1);
     abar = (N1*a1 + N2*a2)/(N1+N2);
