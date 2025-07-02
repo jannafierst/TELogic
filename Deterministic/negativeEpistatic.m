@@ -13,7 +13,7 @@ n1 = N_0;
 
 A = [n1];
 N1 = n1;
-fileID = fopen('/Users/jfierst/IDrive-Sync/Projects/TEParasites/Deterministic_Model/charlesworth.txt','w');
+fileID = fopen('negativeEpistatic.txt','w');
 for i=1:1:n % here, N is number of generations
     Sn = -a - b*N1;
     delta_n1 = N1 * (Sn + u - v); % assuming a Poisson bc variance is the mean (N1)
