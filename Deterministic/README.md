@@ -1,1 +1,1 @@
-These are matlab implementations of the deterministic equations in Eggers and Fierst XXXX. The run.m file allows parameter manipulations and the intrinsic.m and symmetric.m files iterate the equations and plot trajectories for autonomous and non autonomous TEs.
+These are matlab implementations of the deterministic equations in Eggers and Fierst XXXX. The run.m file allows parameter manipulations and the asymmetric.m and symmetric.m files iterate the equations and plot trajectories for autonomous and non autonomous TEs.
