@@ -1,6 +1,6 @@
 Simulation output for Fierst and Eggers XXXX. The parameters for each simulated population are embedded in the file name as Full",MODEL,"_",K,"_",TE_INITIAL,"_",OUTCROSSING,"_",RECOMB,".csv where the values are
 
-MODEL = Model of TE regulation, 0 (Symmetric) or 1 (Intrinsic)
+MODEL = Model of TE regulation, 0 (Symmetric) or 1 (Asymmetric)
 
 K = Population size
 
