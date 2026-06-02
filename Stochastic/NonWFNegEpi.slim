@@ -1,0 +1,138 @@
+// set up a simple neutral simulation
+initialize()
+	{
+	defineCfgParam("RUN",1);
+	defineCfgParam("K",1000);
+	defineCfgParam("TE_INITIAL",4);
+	defineCfgParam("OUTCROSSING",1);
+	defineCfgParam("RECOMB",0.5);
+	
+	//SNPs
+	////Initialization
+	initializeSLiMModelType("nonWF");
+	initializeMutationRate(0); // mutation rate
+	initializeMutationType("m1", 0.5, "f", 0.0); // m1 mutation type: neutral
+	
+	//Chromosome
+	////Constants
+	defineConstant("L", 10000); // chromosome length
+	////Initialization
+	initializeGenomicElementType("g1", m1, 1.0); // g1 genomic element type: uses m1 for all mutations
+	initializeGenomicElement(g1, 0, L-1); // uniform chromosome
+	initializeRecombinationRate(RECOMB);  //totally free? 
+	
+	//TEs
+	////Constants
+	defineConstant("u", 0.01); // u=insertion rate
+	defineConstant("v", 0.001); // v=excision rate
+	defineConstant("a", 0.001); // a=selection coefficient a
+	defineConstant("b", 6e-04); // b=selection coefficient b
+	
+	////Initialization
+	// autonomous transposon mutation
+	initializeMutationType("m2", 0.5, "f", 0.00);
+	m2.convertToSubstitution = F;
+	m2.color = "#FF0000";
+}
+
+reproduction()
+	{
+		//changed line below to out-crossing, since that seems to be what you're after
+	outcrossing_P = OUTCROSSING;
+	inds = p1.individuals;
+	//print(size(inds));
+	// only hermaphrodites can bear offspring, so loop over them
+	for (i in seqLen(K))
+		{
+		if (runif(1) < outcrossing_P)
+			{
+			parent1 = rdunif(1,0, size(inds)-1);
+			parent2 = rdunif(1,0, size(inds)-1);  // I assume that they can cross with other hermaphrodites or a male
+			crossedOffspring = p1.addCrossed(inds[parent1], inds[parent2]);
+			}
+		else
+			{
+			parent = rdunif(1,0, size(inds)-1);
+			//print(parent);
+			selfedOffspring  = p1.addSelfed(inds[parent]);
+			}
+		}
+	self.active = 0;
+	}	
+	
+1 early()
+	{
+	// Create a population with K capacity
+	sim.addSubpop("p1",K);
+	
+	// Generating TEs
+	//// create some TEs at random positions
+	genomes = sim.subpopulations.genomes;
+	positions = rdunif(TE_INITIAL, 0, L-1);
+	for (teIndex in 0:(TE_INITIAL-1))
+		{
+		pos = positions[teIndex];
+		mut = genomes.addNewDrawnMutation(m2, pos);//autonomous transposons
+		}
+	}
+
+early() {
+	p1.fitnessScaling = K / p1.individualCount;
+}
+
+1:500000 late()
+	{
+	for (individual in sim.subpopulations.individuals)
+		{
+		for (genome in individual.genomes)
+			{
+			tes1 = genome.mutationsOfType(m2);//autonomous mutations
+			insCount1 = tes1.size() ? rpois(1, u) else 0; //N Inserting autonomous TEs
+			excCount1 = tes1.size() ? rpois(1, v) else 0; //N Excising autonomous TEs
+			if (insCount1)
+				{
+				if (size(tes1) >= insCount1) // added to handle 0s?
+					{ 				
+					insTEs = sample(tes1, insCount1);
+					for (te in insTEs)
+						{
+						// make a new TE mutation
+						pos = rdunif(1, 0, L-1);
+						insTE = genome.addNewDrawnMutation(m2, pos);
+						}
+					}
+				}
+			//Excision
+			if (excCount1)
+				{
+				if (size(tes1) >= excCount1)
+					{
+					excTEs = sample(tes1, excCount1);
+					for (te in excTEs)
+						{
+						// Remove a TE mutation
+						genome.removeMutations(te);
+						}
+					}
+				}
+			}
+		}	
+	inds = p1.individuals;
+	n = inds.countOfMutationsOfType(m2);
+	inds.fitnessScaling = exp(-a*n - (1/2)*b*n^2); // Synergistic function
+	//inds.fitnessScaling = 1 - s*n; // linear function
+	// Output
+	if (sim.cycle % 10000 == 0)
+		{
+		line = paste(RUN, sim.cycle, mean(n), size(inds), sep=",");
+		print(line);
+		writeFile(paste("CharlesworthL",K,"_",TE_INITIAL,"_",OUTCROSSING,"_",RECOMB,".csv",sep=""), line, append=T);
+		}
+	}
+
+//// A HELPER FUNCTION FOR SETTING CONSTANTS THAT MIGHT BE CONFIGURED VIA COMMAND LINE.
+function (void) defineCfgParam(string$ name, lifs value) 
+	{
+	if (!exists(name))
+		defineConstant(name, value);
+	}
