@@ -15,7 +15,7 @@ function [u1, u2, v, a1, a2, s, m12, m21, N1_0, N2_0] = symmetric(u1, u2, v, a1,
 
 % with 2 transposable elements, element 1 autonomous and element 2
 
-n = 5000;
+g = 5000;
 n1 = N1_0;
 n2 = N2_0;
 
@@ -23,7 +23,7 @@ A = [n1 n2];
 N1 = n1;
 N2 = n2;
 fileID = fopen('Symmetric.txt','w');
-for i=1:1:n % here, N is number of generations
+for i=1:1:g % here, g is number of generations
     Sn = s/((N1+N2)*s + 1);
     abar = (N1*a1 + N2*a2)/(N1+N2);
     delta_n1 = N1 * (Sn + abar*u1 - v) - N1*m12 + N2*m21;
